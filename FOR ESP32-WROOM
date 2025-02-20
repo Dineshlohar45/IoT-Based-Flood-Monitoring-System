@@ -1,1 +1,82 @@
+#define BLYNK_TEMPLATE_ID "TMPL3Rq0Cly2c"
+#define BLYNK_TEMPLATE_NAME "Dinesh Rathod"
+#define BLYNK_AUTH_TOKEN "EgHoBUiI1hv76Q0KAcaX32B3f-IWn94i"
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+
+#define WIFI_SSID "JAY SHIVRAY"
+#define WIFI_PASS "JAY SHIVRAY"
+
+#define WATER_LEVEL_PIN 34
+#define FLOAT_SENSOR_PIN 35
+
+BlynkTimer timer;
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address 0x27, 16 column, 2 row LCD
+
+void setup() {
+    Serial.begin(115200);  // Initialize Serial Monitor
+    delay(1000);  // Small delay to stabilize output
+
+    pinMode(WATER_LEVEL_PIN, INPUT);
+    pinMode(FLOAT_SENSOR_PIN, INPUT);
+
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Connecting WiFi...");
+
+    Serial.println("Connecting to WiFi...");
+    Blynk.begin(BLYNK_AUTH_TOKEN, WIFI_SSID, WIFI_PASS);
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("Connected to WiFi!");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("WiFi Connected");
+    } else {
+        Serial.println("Failed to connect to WiFi.");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("WiFi Failed");
+    }
+
+    timer.setInterval(1000L, sendSensorData);
+}
+
+void loop() {
+    Blynk.run();
+    timer.run();
+}
+
+void sendSensorData() {
+    int waterLevel = analogRead(WATER_LEVEL_PIN);
+    int floatSensorState = digitalRead(FLOAT_SENSOR_PIN);
+
+    Serial.print("Water Level: ");
+    Serial.print(waterLevel);
+    Serial.print(" | Float Sensor: ");
+    Serial.println(floatSensorState == HIGH ? "HIGH (Triggered)" : "LOW (Normal)");
+
+    Blynk.virtualWrite(V1, waterLevel);
+    Blynk.virtualWrite(V2, floatSensorState);
+
+    // Display values on LCD
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Water: ");
+    lcd.print(waterLevel);
+    lcd.setCursor(0, 1);
+    lcd.print("Float: ");
+    lcd.print(floatSensorState == HIGH ? "TRIG" : "NORMAL");
+
+    if (waterLevel > 3000 || floatSensorState == HIGH) {
+        Serial.println("\u26A0\uFE0F  Flood Alert! Sending notification...");
+        Blynk.logEvent("flood_alert_dinesh_please_take_an_action", "Flood Alert!");  // Notify via Blynk
+        lcd.setCursor(8, 1);
+        lcd.print("ALERT!");
+    }
+}
 
