@@ -83,3 +83,53 @@ MX_USART2_UART_Init(void) {
 static void MX_I2C1_Init(void) {
   // Implementation of I2C initialization
 }
+
+
+
+
+- ESP8266 Code -
+
+#define BLYNK_PRINT Serial
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+// Blynk authentication token
+char auth[] = "Your_Blynk_Auth_Token";
+
+// WiFi credentials
+char ssid[] = "Your_SSID";
+char pass[] = "Your_Password";
+
+// Flood status
+char flood_status[20];
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(115200);
+  Serial.setTimeout(100);
+
+  // Connect to WiFi
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Connect to Blynk
+  Blynk.begin(auth, ssid, pass);
+}
+
+void loop() {
+  // Read flood status from STM32
+  if (Serial.available() > 0) {
+    Serial.readBytesUntil('\n', flood_status, sizeof(flood_status));
+    flood_status[strlen(flood_status)] = '\0';
+
+    // Send flood status to Blynk
+    Blynk.virtualWrite(V1, flood_status);
+  }
+
+  // Run Blynk
+  Blynk.run();
+}
